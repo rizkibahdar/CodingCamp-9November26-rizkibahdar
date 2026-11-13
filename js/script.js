@@ -81,12 +81,41 @@ function saveCustomCategories() {
   localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(customCategories));
 }
 
+/**
+ * Load spending limit from Local Storage.
+ * Returns null if not set or invalid.
+ */
+function loadSpendingLimit() {
+  try {
+    const stored = localStorage.getItem(LIMIT_STORAGE_KEY);
+    if (!stored) return null;
+    const parsed = parseFloat(stored);
+    return isNaN(parsed) || parsed <= 0 ? null : parsed;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Save spending limit to Local Storage.
+ */
+function saveSpendingLimit(limit) {
+  if (limit === null) {
+    localStorage.removeItem(LIMIT_STORAGE_KEY);
+  } else {
+    localStorage.setItem(LIMIT_STORAGE_KEY, String(limit));
+  }
+}
+
 // ============================================
 // Application State
 // ============================================
 
 let transactions = loadTransactions();
 let customCategories = loadCustomCategories();
+
+// Spending limit — null means no limit set
+let spendingLimit = loadSpendingLimit();
 
 // ============================================
 // Category Helpers
@@ -229,6 +258,91 @@ function renderCategoryOptions() {
 }
 
 // ============================================
+// Spending Limit
+// ============================================
+
+/**
+ * Render the spending limit section based on current state.
+ */
+function renderLimit() {
+  const limitDisplay = document.getElementById('limit-display');
+  const limitBarFill = document.getElementById('limit-bar-fill');
+  const limitStatusText = document.getElementById('limit-status-text');
+  const limitFraction = document.getElementById('limit-fraction');
+  const limitExceededMsg = document.getElementById('limit-exceeded-msg');
+  const limitInput = document.getElementById('limit-input');
+  const clearBtn = document.getElementById('clear-limit-btn');
+
+  if (spendingLimit === null) {
+    limitDisplay.style.display = 'none';
+    clearBtn.style.display = 'none';
+    limitInput.value = '';
+    return;
+  }
+
+  const total = transactions.reduce((sum, t) => sum + t.amount, 0);
+  const pct = Math.min((total / spendingLimit) * 100, 100);
+  const isExceeded = total >= spendingLimit;
+  const isWarning = !isExceeded && pct >= 80;
+
+  // Progress bar fill
+  limitBarFill.style.width = pct + '%';
+  limitBarFill.className = 'limit-bar-fill';
+  if (isExceeded) limitBarFill.classList.add('exceeded');
+  else if (isWarning) limitBarFill.classList.add('warning');
+
+  // Status text
+  if (isExceeded) limitStatusText.textContent = 'Limit exceeded';
+  else if (isWarning) limitStatusText.textContent = 'Approaching limit';
+  else limitStatusText.textContent = 'Within limit';
+
+  limitStatusText.className = 'limit-status-label';
+  if (isExceeded) limitStatusText.classList.add('exceeded');
+  else if (isWarning) limitStatusText.classList.add('warning');
+
+  // Fraction label
+  limitFraction.textContent = formatIDR(total) + ' / ' + formatIDR(spendingLimit);
+
+  // Exceeded message
+  limitExceededMsg.style.display = isExceeded ? 'block' : 'none';
+
+  limitDisplay.style.display = 'block';
+  clearBtn.style.display = 'inline-flex';
+}
+
+/**
+ * Handle Set Limit button click.
+ */
+function handleSetLimit() {
+  const input = document.getElementById('limit-input');
+  const errorEl = document.getElementById('error-limit');
+  const value = parseFloat(input.value);
+
+  errorEl.textContent = '';
+  input.classList.remove('input-error');
+
+  if (!input.value.trim() || isNaN(value) || value <= 0) {
+    errorEl.textContent = 'Please enter a valid limit greater than zero.';
+    input.classList.add('input-error');
+    return;
+  }
+
+  spendingLimit = value;
+  saveSpendingLimit(spendingLimit);
+  input.value = '';
+  renderLimit();
+}
+
+/**
+ * Handle Clear Limit button click.
+ */
+function handleClearLimit() {
+  spendingLimit = null;
+  saveSpendingLimit(null);
+  renderLimit();
+}
+
+// ============================================
 // Add Transaction
 // ============================================
 
@@ -309,10 +423,21 @@ function handleFormSubmit(event) {
   renderTotal();
   renderList();
   renderChart();
+  renderLimit();
 }
 
 document.getElementById('form').addEventListener('submit', handleFormSubmit);
 document.getElementById('add-category-btn').addEventListener('click', addCategory);
+document.getElementById('set-limit-btn').addEventListener('click', handleSetLimit);
+document.getElementById('clear-limit-btn').addEventListener('click', handleClearLimit);
+
+// Allow pressing Enter in the limit input to set
+document.getElementById('limit-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    handleSetLimit();
+  }
+});
 
 // Allow pressing Enter in the category input to add
 document.getElementById('new-category-input').addEventListener('keydown', (e) => {
@@ -406,6 +531,7 @@ function deleteTransaction(id) {
   renderTotal();
   renderList();
   renderChart();
+  renderLimit();
 }
 
 /**
@@ -563,6 +689,7 @@ function init() {
   renderTotal();
   renderList();
   renderChart();
+  renderLimit();
 }
 
 init();
