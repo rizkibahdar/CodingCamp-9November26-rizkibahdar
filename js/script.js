@@ -332,3 +332,18 @@ function renderChart() {
     },
   });
 }
+
+// ============================================
+// Initialization — Run on page load
+// ============================================
+
+/**
+ * Initialize the UI by rendering all sections from stored data.
+ */
+function init() {
+  renderTotal();
+  renderList();
+  renderChart();
+}
+
+init();
