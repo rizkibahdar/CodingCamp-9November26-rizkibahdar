@@ -224,3 +224,111 @@ function escapeHTML(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
+// ============================================
+// Spending Distribution Chart
+// ============================================
+
+// Hold the Chart.js instance so we can destroy it before re-creating
+let spendingChart = null;
+
+const CATEGORY_COLORS = {
+  Food: '#f59e0b',
+  Transport: '#3b82f6',
+  Fun: '#a855f7',
+};
+
+/**
+ * Aggregate transaction amounts by category.
+ * Returns an object: { Food: 0, Transport: 0, Fun: 0 }
+ */
+function getCategoryTotals() {
+  const totals = { Food: 0, Transport: 0, Fun: 0 };
+  transactions.forEach((t) => {
+    if (totals[t.category] !== undefined) {
+      totals[t.category] += t.amount;
+    }
+  });
+  return totals;
+}
+
+/**
+ * Render or update the pie chart.
+ * Destroys the previous instance before creating a new one.
+ * Shows empty state when no transactions exist.
+ */
+function renderChart() {
+  const canvas = document.getElementById('spending-chart');
+  const emptyState = document.getElementById('chart-empty-state');
+
+  if (transactions.length === 0) {
+    canvas.style.display = 'none';
+    emptyState.style.display = 'block';
+
+    // Destroy existing chart if present
+    if (spendingChart) {
+      spendingChart.destroy();
+      spendingChart = null;
+    }
+    return;
+  }
+
+  canvas.style.display = 'block';
+  emptyState.style.display = 'none';
+
+  const totals = getCategoryTotals();
+
+  // Only include categories that have spending
+  const labels = [];
+  const data = [];
+  const colors = [];
+
+  Object.entries(totals).forEach(([category, amount]) => {
+    if (amount > 0) {
+      labels.push(category);
+      data.push(amount);
+      colors.push(CATEGORY_COLORS[category]);
+    }
+  });
+
+  // Destroy previous chart instance to avoid canvas reuse errors
+  if (spendingChart) {
+    spendingChart.destroy();
+    spendingChart = null;
+  }
+
+  spendingChart = new Chart(canvas, {
+    type: 'pie',
+    data: {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor: colors,
+          borderColor: '#ffffff',
+          borderWidth: 2,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            padding: 16,
+            font: { size: 13 },
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              const value = context.parsed;
+              return ' ' + context.label + ': ' + formatIDR(value);
+            },
+          },
+        },
+      },
+    },
+  });
+}
