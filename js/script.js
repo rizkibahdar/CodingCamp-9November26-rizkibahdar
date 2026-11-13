@@ -5,6 +5,31 @@
 // ============================================
 
 const STORAGE_KEY = 'expense_transactions';
+const CATEGORIES_STORAGE_KEY = 'expense_categories';
+
+// Default categories — always locked in, never deletable
+const DEFAULT_CATEGORIES = ['Food', 'Transport', 'Fun'];
+
+// Default colors for the 3 locked-in categories
+const DEFAULT_CATEGORY_COLORS = {
+  Food: '#f59e0b',
+  Transport: '#3b82f6',
+  Fun: '#a855f7',
+};
+
+// Palette for auto-assigning colors to custom categories
+const COLOR_PALETTE = [
+  '#ef4444', // red
+  '#10b981', // green
+  '#ec4899', // pink
+  '#14b8a6', // teal
+  '#f97316', // orange
+  '#6366f1', // indigo
+  '#84cc16', // lime
+  '#06b6d4', // cyan
+  '#e11d48', // rose
+  '#8b5cf6', // violet
+];
 
 // ============================================
 // Data Layer — Local Storage
@@ -32,12 +57,175 @@ function saveTransactions(transactions) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
 }
 
+/**
+ * Load custom categories from Local Storage.
+ * Returns an empty array if no data exists or data is invalid.
+ * Each entry: { name: string, color: string }
+ */
+function loadCustomCategories() {
+  try {
+    const stored = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+/**
+ * Save custom categories array to Local Storage.
+ */
+function saveCustomCategories() {
+  localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(customCategories));
+}
+
 // ============================================
 // Application State
 // ============================================
 
-// In-memory transactions array, initialized from Local Storage on load
 let transactions = loadTransactions();
+let customCategories = loadCustomCategories();
+
+// ============================================
+// Category Helpers
+// ============================================
+
+/**
+ * Return the full list of all categories (default + custom).
+ */
+function getAllCategories() {
+  return [
+    ...DEFAULT_CATEGORIES.map((name) => ({ name, color: DEFAULT_CATEGORY_COLORS[name] })),
+    ...customCategories,
+  ];
+}
+
+/**
+ * Get color for a given category name.
+ * Falls back to a neutral gray for orphaned categories.
+ */
+function getCategoryColor(name) {
+  const all = getAllCategories();
+  const found = all.find((c) => c.name === name);
+  return found ? found.color : '#9ca3af';
+}
+
+/**
+ * Auto-assign the next available color from the palette.
+ * Cycles through the palette if all colors are used.
+ */
+function assignNextColor() {
+  return COLOR_PALETTE[customCategories.length % COLOR_PALETTE.length];
+}
+
+// ============================================
+// Category Management
+// ============================================
+
+/**
+ * Add a new custom category.
+ */
+function addCategory() {
+  const input = document.getElementById('new-category-input');
+  const errorEl = document.getElementById('error-category-add');
+  const name = input.value.trim();
+
+  errorEl.textContent = '';
+  input.classList.remove('input-error');
+
+  if (!name) {
+    errorEl.textContent = 'Category name cannot be empty.';
+    input.classList.add('input-error');
+    return;
+  }
+
+  // Check for duplicates (case-insensitive)
+  const all = getAllCategories();
+  const isDuplicate = all.some((c) => c.name.toLowerCase() === name.toLowerCase());
+  if (isDuplicate) {
+    errorEl.textContent = 'This category already exists.';
+    input.classList.add('input-error');
+    return;
+  }
+
+  const newCategory = { name, color: assignNextColor() };
+  customCategories.push(newCategory);
+  saveCustomCategories();
+
+  input.value = '';
+
+  renderCategoryList();
+  renderCategoryOptions();
+}
+
+/**
+ * Delete a custom category by name.
+ * Existing transactions with this category are kept as-is.
+ */
+function deleteCategory(name) {
+  customCategories = customCategories.filter((c) => c.name !== name);
+  saveCustomCategories();
+  renderCategoryList();
+  renderCategoryOptions();
+  renderChart(); // refresh chart in case the category had spending
+}
+
+/**
+ * Render the category tag list in the Manage Categories section.
+ * Default categories show a lock icon (not deletable).
+ * Custom categories show a delete button.
+ */
+function renderCategoryList() {
+  const container = document.getElementById('category-tag-list');
+  container.innerHTML = '';
+
+  getAllCategories().forEach(({ name, color }) => {
+    const tag = document.createElement('span');
+    tag.className = 'category-tag';
+    tag.style.backgroundColor = color;
+
+    const isDefault = DEFAULT_CATEGORIES.includes(name);
+
+    tag.innerHTML = `
+      <span class="category-tag-name">${escapeHTML(name)}</span>
+      ${
+        isDefault
+          ? '<span class="category-tag-lock" aria-label="Default category">🔒</span>'
+          : `<button class="category-tag-delete" data-name="${escapeHTML(name)}" aria-label="Delete ${escapeHTML(name)}">✕</button>`
+      }
+    `;
+
+    container.appendChild(tag);
+  });
+
+  // Attach delete listeners for custom categories
+  container.querySelectorAll('.category-tag-delete').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      deleteCategory(btn.dataset.name);
+    });
+  });
+}
+
+/**
+ * Populate the category <select> dropdown with all current categories.
+ */
+function renderCategoryOptions() {
+  const select = document.getElementById('category');
+  const currentValue = select.value;
+
+  select.innerHTML = '<option value="">-- Select Category --</option>';
+
+  getAllCategories().forEach(({ name }) => {
+    const option = document.createElement('option');
+    option.value = name;
+    option.textContent = name;
+    select.appendChild(option);
+  });
+
+  // Restore previously selected value if it still exists
+  if (currentValue) select.value = currentValue;
+}
 
 // ============================================
 // Add Transaction
@@ -53,7 +241,7 @@ function showError(errorId, inputEl, message) {
 }
 
 /**
- * Clear all inline validation errors.
+ * Clear all inline validation errors on the expense form.
  */
 function clearErrors() {
   ['error-name', 'error-amount', 'error-category'].forEach((id) => {
@@ -81,7 +269,6 @@ function handleFormSubmit(event) {
   const amount = parseFloat(amountInput.value);
   const category = categoryInput.value;
 
-  // Validate
   let isValid = true;
 
   if (!name) {
@@ -101,7 +288,6 @@ function handleFormSubmit(event) {
 
   if (!isValid) return;
 
-  // Build transaction object
   const transaction = {
     id: Date.now(),
     name,
@@ -109,24 +295,29 @@ function handleFormSubmit(event) {
     category,
   };
 
-  // Update state
   transactions.push(transaction);
   saveTransactions(transactions);
 
-  // Clear form
   nameInput.value = '';
   amountInput.value = '';
   categoryInput.value = '';
   clearErrors();
 
-  // Update UI
   renderTotal();
   renderList();
   renderChart();
 }
 
-// Attach form listener
 document.getElementById('form').addEventListener('submit', handleFormSubmit);
+document.getElementById('add-category-btn').addEventListener('click', addCategory);
+
+// Allow pressing Enter in the category input to add
+document.getElementById('new-category-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    addCategory();
+  }
+});
 
 // ============================================
 // Render Total Spending
@@ -176,7 +367,6 @@ function renderList() {
   const listEl = document.getElementById('list');
   const emptyState = document.getElementById('list-empty-state');
 
-  // Clear existing rows
   listEl.innerHTML = '';
 
   if (transactions.length === 0) {
@@ -186,26 +376,24 @@ function renderList() {
 
   emptyState.style.display = 'none';
 
-  // Render one <li> per transaction (newest first)
   [...transactions].reverse().forEach((t) => {
     const li = document.createElement('li');
     li.className = 'transaction-item';
 
-    const categoryClass = t.category.toLowerCase();
+    const badgeColor = getCategoryColor(t.category);
 
     li.innerHTML = `
       <div class="transaction-info">
         <span class="transaction-name">${escapeHTML(t.name)}</span>
         <span class="transaction-amount">${formatIDR(t.amount)}</span>
       </div>
-      <span class="category-badge ${categoryClass}">${escapeHTML(t.category)}</span>
+      <span class="category-badge" style="background-color:${badgeColor}">${escapeHTML(t.category)}</span>
       <button class="delete-btn" data-id="${t.id}" aria-label="Delete ${escapeHTML(t.name)}">&#x1F5D1;</button>
     `;
 
     listEl.appendChild(li);
   });
 
-  // Attach delete listeners
   listEl.querySelectorAll('.delete-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       deleteTransaction(Number(btn.dataset.id));
@@ -229,33 +417,21 @@ function escapeHTML(str) {
 // Spending Distribution Chart
 // ============================================
 
-// Hold the Chart.js instance so we can destroy it before re-creating
 let spendingChart = null;
 
-const CATEGORY_COLORS = {
-  Food: '#f59e0b',
-  Transport: '#3b82f6',
-  Fun: '#a855f7',
-};
-
 /**
- * Aggregate transaction amounts by category.
- * Returns an object: { Food: 0, Transport: 0, Fun: 0 }
+ * Aggregate transaction amounts by category (all categories, dynamic).
  */
 function getCategoryTotals() {
-  const totals = { Food: 0, Transport: 0, Fun: 0 };
+  const totals = {};
   transactions.forEach((t) => {
-    if (totals[t.category] !== undefined) {
-      totals[t.category] += t.amount;
-    }
+    totals[t.category] = (totals[t.category] || 0) + t.amount;
   });
   return totals;
 }
 
 /**
- * Render or update the pie chart.
- * Destroys the previous instance before creating a new one.
- * Shows empty state when no transactions exist.
+ * Render or update the pie chart using dynamic category colors.
  */
 function renderChart() {
   const canvas = document.getElementById('spending-chart');
@@ -264,8 +440,6 @@ function renderChart() {
   if (transactions.length === 0) {
     canvas.style.display = 'none';
     emptyState.style.display = 'block';
-
-    // Destroy existing chart if present
     if (spendingChart) {
       spendingChart.destroy();
       spendingChart = null;
@@ -277,8 +451,6 @@ function renderChart() {
   emptyState.style.display = 'none';
 
   const totals = getCategoryTotals();
-
-  // Only include categories that have spending
   const labels = [];
   const data = [];
   const colors = [];
@@ -287,11 +459,10 @@ function renderChart() {
     if (amount > 0) {
       labels.push(category);
       data.push(amount);
-      colors.push(CATEGORY_COLORS[category]);
+      colors.push(getCategoryColor(category));
     }
   });
 
-  // Destroy previous chart instance to avoid canvas reuse errors
   if (spendingChart) {
     spendingChart.destroy();
     spendingChart = null;
@@ -323,8 +494,7 @@ function renderChart() {
         tooltip: {
           callbacks: {
             label: function (context) {
-              const value = context.parsed;
-              return ' ' + context.label + ': ' + formatIDR(value);
+              return ' ' + context.label + ': ' + formatIDR(context.parsed);
             },
           },
         },
@@ -337,10 +507,9 @@ function renderChart() {
 // Initialization — Run on page load
 // ============================================
 
-/**
- * Initialize the UI by rendering all sections from stored data.
- */
 function init() {
+  renderCategoryList();
+  renderCategoryOptions();
   renderTotal();
   renderList();
   renderChart();

@@ -289,18 +289,6 @@ button[type="submit"]:active {
   flex-shrink: 0;
 }
 
-.category-badge.food {
-  background-color: var(--color-food);
-}
-
-.category-badge.transport {
-  background-color: var(--color-transport);
-}
-
-.category-badge.fun {
-  background-color: var(--color-fun);
-}
-
 /* --- Delete Button --- */
 .delete-btn {
   background: none;
@@ -342,4 +330,85 @@ button[type="submit"]:active {
     max-width: 320px;
     max-height: 320px;
   }
+}
+
+/* ============================================
+   Enhancement 1 — Manage Categories
+   ============================================ */
+
+/* Category tag list */
+#category-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  min-height: 36px;
+}
+
+/* Individual category tag */
+.category-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.category-tag-name {
+  line-height: 1;
+}
+
+.category-tag-lock {
+  font-size: 0.7rem;
+  opacity: 0.85;
+}
+
+.category-tag-delete {
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  opacity: 0.8;
+  transition: opacity 0.15s ease;
+}
+
+.category-tag-delete:hover {
+  opacity: 1;
+}
+
+/* Add category row */
+.category-add-row {
+  display: flex;
+  flex-direction: row;
+  gap: var(--spacing-sm);
+  align-items: center;
+  margin-bottom: var(--spacing-xs);
+}
+
+.category-add-row input {
+  flex: 1;
+}
+
+.category-add-row button {
+  padding: 10px var(--spacing-md);
+  background-color: var(--color-accent);
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  white-space: nowrap;
+  min-height: 44px;
+}
+
+.category-add-row button:hover {
+  background-color: var(--color-accent-hover);
 }
