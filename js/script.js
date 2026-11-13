@@ -7,6 +7,7 @@
 const STORAGE_KEY = 'expense_transactions';
 const CATEGORIES_STORAGE_KEY = 'expense_categories';
 const LIMIT_STORAGE_KEY = 'expense_spending_limit';
+const THEME_STORAGE_KEY = 'expense_theme';
 
 // Default categories — always locked in, never deletable
 const DEFAULT_CATEGORIES = ['Food', 'Transport', 'Fun'];
@@ -680,10 +681,45 @@ function renderChart() {
 }
 
 // ============================================
+// Theme — Dark / Light Mode
+// ============================================
+
+/**
+ * Apply a theme ('light' or 'dark') to the document and update the toggle button.
+ */
+function applyTheme(theme) {
+  const btn = document.getElementById('theme-toggle');
+  if (theme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    btn.textContent = '☀️';
+    btn.setAttribute('aria-label', 'Switch to light mode');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    btn.textContent = '🌙';
+    btn.setAttribute('aria-label', 'Switch to dark mode');
+  }
+  localStorage.setItem(THEME_STORAGE_KEY, theme);
+}
+
+/**
+ * Toggle between light and dark mode.
+ */
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+// ============================================
 // Initialization — Run on page load
 // ============================================
 
 function init() {
+  // Apply saved theme before rendering anything
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'light';
+  applyTheme(savedTheme);
+
   renderCategoryList();
   renderCategoryOptions();
   renderTotal();

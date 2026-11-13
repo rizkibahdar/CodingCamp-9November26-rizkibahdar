@@ -67,7 +67,7 @@ header {
   color: #ffffff;
   padding: var(--spacing-lg) var(--spacing-md);
   max-width: 100%;
-  text-align: center;
+  text-align: left;
 }
 
 header h1 {
@@ -581,4 +581,87 @@ button[type="submit"]:active {
 
 #limit-display {
   margin-bottom: var(--spacing-md);
+}
+
+/* ============================================
+   Enhancement 5 — Dark / Light Mode
+   ============================================ */
+
+/* Dark mode variable overrides */
+[data-theme="dark"] {
+  --color-bg: #111827;
+  --color-surface: #1f2937;
+  --color-border: #374151;
+  --color-text-primary: #f9fafb;
+  --color-text-secondary: #9ca3af;
+  --color-accent: #10b981;
+  --color-accent-hover: #059669;
+}
+
+/* Dark mode specific overrides for elements that use hardcoded colors */
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] select {
+  background-color: #374151;
+  color: #f9fafb;
+  border-color: #4b5563;
+}
+
+[data-theme="dark"] .transaction-item {
+  background-color: #374151;
+  border-color: #4b5563;
+}
+
+[data-theme="dark"] .limit-bar-track {
+  background-color: #374151;
+}
+
+[data-theme="dark"] .limit-exceeded-msg {
+  background-color: #450a0a;
+  color: #fca5a5;
+}
+
+[data-theme="dark"] #clear-limit-btn {
+  background-color: #450a0a;
+  color: #fca5a5;
+}
+
+[data-theme="dark"] #clear-limit-btn:hover {
+  background-color: #7f1d1d;
+}
+
+[data-theme="dark"] .sort-control select {
+  background-color: #374151;
+  color: #f9fafb;
+  border-color: #4b5563;
+}
+
+/* Header layout for toggle button */
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Theme toggle button */
+#theme-toggle {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease;
+}
+
+#theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
