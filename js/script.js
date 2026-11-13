@@ -288,11 +288,13 @@ function handleFormSubmit(event) {
 
   if (!isValid) return;
 
+  const now = Date.now();
   const transaction = {
-    id: Date.now(),
+    id: now,
     name,
     amount,
     category,
+    timestamp: now,
   };
 
   transactions.push(transaction);
@@ -322,6 +324,25 @@ document.getElementById('new-category-input').addEventListener('keydown', (e) =>
 // ============================================
 // Render Total Spending
 // ============================================
+
+/**
+ * Format a timestamp (ms) as: "13 Nov 2026, 14:35"
+ * Returns "—" for missing or invalid timestamps.
+ */
+function formatTimestamp(ts) {
+  if (!ts) return '—';
+  try {
+    const date = new Date(ts);
+    const day = date.getDate();
+    const month = date.toLocaleString('en-GB', { month: 'short' });
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day} ${month} ${year}, ${hours}:${minutes}`;
+  } catch (e) {
+    return '—';
+  }
+}
 
 /**
  * Format a number as Indonesian Rupiah: Rp 150.000
@@ -386,6 +407,7 @@ function renderList() {
       <div class="transaction-info">
         <span class="transaction-name">${escapeHTML(t.name)}</span>
         <span class="transaction-amount">${formatIDR(t.amount)}</span>
+        <span class="transaction-timestamp">${formatTimestamp(t.timestamp)}</span>
       </div>
       <span class="category-badge" style="background-color:${badgeColor}">${escapeHTML(t.category)}</span>
       <button class="delete-btn" data-id="${t.id}" aria-label="Delete ${escapeHTML(t.name)}">&#x1F5D1;</button>

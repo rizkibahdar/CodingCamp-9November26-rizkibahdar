@@ -412,3 +412,13 @@ button[type="submit"]:active {
 .category-add-row button:hover {
   background-color: var(--color-accent-hover);
 }
+
+/* ============================================
+   Enhancement 2 — Transaction Timestamp
+   ============================================ */
+
+.transaction-timestamp {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin-top: 1px;
+}
