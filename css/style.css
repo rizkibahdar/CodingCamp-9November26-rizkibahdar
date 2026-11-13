@@ -422,3 +422,48 @@ button[type="submit"]:active {
   color: var(--color-text-secondary);
   margin-top: 1px;
 }
+
+/* ============================================
+   Enhancement 3 — Transaction Sort Control
+   ============================================ */
+
+.list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.list-header h2 {
+  margin-bottom: 0;
+}
+
+.sort-control {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.sort-control label {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.sort-control select {
+  font-size: 0.8rem;
+  padding: 5px 10px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text-primary);
+  background-color: #fff;
+  cursor: pointer;
+  width: auto;
+}
+
+.sort-control select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}

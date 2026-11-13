@@ -6,6 +6,7 @@
 
 const STORAGE_KEY = 'expense_transactions';
 const CATEGORIES_STORAGE_KEY = 'expense_categories';
+const LIMIT_STORAGE_KEY = 'expense_spending_limit';
 
 // Default categories — always locked in, never deletable
 const DEFAULT_CATEGORIES = ['Food', 'Transport', 'Fun'];
@@ -321,6 +322,12 @@ document.getElementById('new-category-input').addEventListener('keydown', (e) =>
   }
 });
 
+// Sort dropdown
+document.getElementById('sort-select').addEventListener('change', (e) => {
+  currentSort = e.target.value;
+  renderList();
+});
+
 // ============================================
 // Render Total Spending
 // ============================================
@@ -369,6 +376,27 @@ function renderTotal() {
 // Render Transaction List
 // ============================================
 
+// Current sort mode — persists while the page is open
+let currentSort = 'newest';
+
+/**
+ * Return a sorted copy of transactions based on currentSort.
+ */
+function sortTransactions(list) {
+  const copy = [...list];
+  switch (currentSort) {
+    case 'amount-desc':
+      return copy.sort((a, b) => b.amount - a.amount);
+    case 'amount-asc':
+      return copy.sort((a, b) => a.amount - b.amount);
+    case 'category-az':
+      return copy.sort((a, b) => a.category.localeCompare(b.category));
+    case 'newest':
+    default:
+      return copy.reverse(); // newest first (original order is oldest first)
+  }
+}
+
 /**
  * Delete a transaction by ID, save, and re-render all UI.
  */
@@ -397,7 +425,7 @@ function renderList() {
 
   emptyState.style.display = 'none';
 
-  [...transactions].reverse().forEach((t) => {
+  sortTransactions(transactions).forEach((t) => {
     const li = document.createElement('li');
     li.className = 'transaction-item';
 

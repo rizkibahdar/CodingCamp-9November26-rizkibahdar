@@ -18,6 +18,28 @@
         <p id="total-amount">Rp 0</p>
       </section>
 
+      <section id="spending-limit">
+        <h2>Spending Limit</h2>
+        <div id="limit-display" style="display:none">
+          <div class="limit-bar-track">
+            <div id="limit-bar-fill" class="limit-bar-fill"></div>
+          </div>
+          <div class="limit-status-row">
+            <span id="limit-status-text"></span>
+            <span id="limit-fraction"></span>
+          </div>
+          <p id="limit-exceeded-msg" class="limit-exceeded-msg" style="display:none">
+            ⚠️ You have exceeded your spending limit!
+          </p>
+        </div>
+        <div class="limit-input-row">
+          <input type="number" id="limit-input" placeholder="e.g. 500000" min="1" />
+          <button type="button" id="set-limit-btn">Set Limit</button>
+          <button type="button" id="clear-limit-btn" style="display:none">Clear</button>
+        </div>
+        <span class="error" id="error-limit"></span>
+      </section>
+
       <section id="expense-form">
         <h2>Add Expense</h2>
         <form id="form">
@@ -59,7 +81,18 @@
       </section>
 
       <section id="transaction-list">
-        <h2>Transaction History</h2>
+        <div class="list-header">
+          <h2>Transaction History</h2>
+          <div class="sort-control">
+            <label for="sort-select">Sort by</label>
+            <select id="sort-select">
+              <option value="newest">Newest first</option>
+              <option value="amount-desc">Amount ↓</option>
+              <option value="amount-asc">Amount ↑</option>
+              <option value="category-az">Category A→Z</option>
+            </select>
+          </div>
+        </div>
         <ul id="list"></ul>
         <p id="list-empty-state">No transactions yet. Add your first expense above.</p>
       </section>
