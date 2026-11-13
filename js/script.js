@@ -127,3 +127,100 @@ function handleFormSubmit(event) {
 
 // Attach form listener
 document.getElementById('form').addEventListener('submit', handleFormSubmit);
+
+// ============================================
+// Render Total Spending
+// ============================================
+
+/**
+ * Format a number as Indonesian Rupiah: Rp 150.000
+ */
+function formatIDR(amount) {
+  return (
+    'Rp ' +
+    new Intl.NumberFormat('id-ID', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount)
+  );
+}
+
+/**
+ * Calculate total and update the #total-amount element.
+ */
+function renderTotal() {
+  const total = transactions.reduce((sum, t) => sum + t.amount, 0);
+  document.getElementById('total-amount').textContent = formatIDR(total);
+}
+
+// ============================================
+// Render Transaction List
+// ============================================
+
+/**
+ * Delete a transaction by ID, save, and re-render all UI.
+ */
+function deleteTransaction(id) {
+  transactions = transactions.filter((t) => t.id !== id);
+  saveTransactions(transactions);
+  renderTotal();
+  renderList();
+  renderChart();
+}
+
+/**
+ * Clear and re-render the transaction list.
+ * Shows empty state when no transactions exist.
+ */
+function renderList() {
+  const listEl = document.getElementById('list');
+  const emptyState = document.getElementById('list-empty-state');
+
+  // Clear existing rows
+  listEl.innerHTML = '';
+
+  if (transactions.length === 0) {
+    emptyState.style.display = 'block';
+    return;
+  }
+
+  emptyState.style.display = 'none';
+
+  // Render one <li> per transaction (newest first)
+  [...transactions].reverse().forEach((t) => {
+    const li = document.createElement('li');
+    li.className = 'transaction-item';
+
+    const categoryClass = t.category.toLowerCase();
+
+    li.innerHTML = `
+      <div class="transaction-info">
+        <span class="transaction-name">${escapeHTML(t.name)}</span>
+        <span class="transaction-amount">${formatIDR(t.amount)}</span>
+      </div>
+      <span class="category-badge ${categoryClass}">${escapeHTML(t.category)}</span>
+      <button class="delete-btn" data-id="${t.id}" aria-label="Delete ${escapeHTML(t.name)}">&#x1F5D1;</button>
+    `;
+
+    listEl.appendChild(li);
+  });
+
+  // Attach delete listeners
+  listEl.querySelectorAll('.delete-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      deleteTransaction(Number(btn.dataset.id));
+    });
+  });
+}
+
+/**
+ * Escape HTML special characters to prevent XSS.
+ */
+function escapeHTML(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
